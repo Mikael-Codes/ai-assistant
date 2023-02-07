@@ -5,49 +5,106 @@ import webbrowser
 import wikipedia
 import wolframalpha
 
-# Speech engine initialisation
-engine = pyttsx3.init()
-voices = engine.getProperty('voices')
-engine.setProperty('voice', voices[0].id) # 0 = male, 1 = female
-activationWord = 'computer' # Single word
+# Google TTS
+import google.cloud.texttospeech as tts
+import pygame
+import time
+
+# Mute ALSA errors...
+from ctypes import *
+from contextlib import contextmanager
+
+ERROR_HANDLER_FUNC = CFUNCTYPE(None, c_char_p, c_int, c_char_p, c_int, c_char_p)
+
+def py_error_handler(filename, line, function, err, fmt):
+    pass
+
+c_error_handler = ERROR_HANDLER_FUNC(py_error_handler)
+
+@contextmanager
+def noalsaerr():
+    asound = cdll.LoadLibrary('libasound.so')
+    asound.snd_lib_error_set_handler(c_error_handler)
+    yield
+    asound.snd_lib_error_set_handler(None)
+
+# Local speech engine initialisation
+with noalsaerr(): 
+    engine = pyttsx3.init()
+    voices = engine.getProperty('voices')
+    engine.setProperty('voice', voices[0].id) # 0 = male, 1 = female
+    activationWord = 'computer' # Single word
+
+# Google TTS client
+def google_text_to_wav(voice_name: str, text: str):
+    language_code = "-".join(voice_name.split("-")[:2])
+
+    # Set the text input to be synthesized
+    text_input = tts.SynthesisInput(text=text)
+
+    # Build the voice request, select the language code ("en-US") and the voice name
+    voice_params = tts.VoiceSelectionParams(
+        language_code=language_code, name=voice_name
+    )
+
+    # Select the type of audio file you want returned
+    audio_config = tts.AudioConfig(audio_encoding=tts.AudioEncoding.LINEAR16)
+
+    client = tts.TextToSpeechClient()
+    response = client.synthesize_speech(
+        input=text_input, voice=voice_params, audio_config=audio_config
+    )
+
+    return response.audio_content
+
 
 # Configure browser
 # Set the path
-chrome_path = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+firefox_path = r"usr/bin/firefox"
 # Register the browser
-webbrowser.register('chrome', None, 
-                    webbrowser.BackgroundBrowser(chrome_path))
+webbrowser.register('firefox', None, 
+                    webbrowser.BackgroundBrowser(firefox_path))
 
 # Wolfram Alpha client
 appId = '5R49J7-J888YX9J2V'
 wolframClient = wolframalpha.Client(appId)
 
 def speak(text, rate = 120):
-    engine.setProperty('rate', rate) 
-    engine.say(text)
-    engine.runAndWait()
+    time.sleep(1.2)
+
+    speech = google_text_to_wav('en-US-News-K', text)
+
+    pygame.mixer.init(frequency=12000, buffer = 512)
+    speech_sound = pygame.mixer.Sound(speech)
+    speech_sound.play()
+    time.sleep(len(text.split()) / 2)
+    pygame.mixer.quit()
+
+    # engine.setProperty('rate', rate) 
+    # engine.say(text)
+    # engine.runAndWait()
 
 def parseCommand():
-    listener = sr.Recognizer()
-    print('Listening for a command')
+    with noalsaerr():
+        listener = sr.Recognizer()
+        print('Listening for a command')
 
-    with sr.Microphone() as source:
-        listener.pause_threshold = 2
-        input_speech = listener.listen(source)
+        with sr.Microphone() as source:
+            listener.pause_threshold = 2
+            input_speech = listener.listen(source)
 
-    try:
-        print('Recognizing speech...')
-        query = listener.recognize_google(input_speech, language='en_gb')
-        print(f'The input speech was: {query}')
+        try:
+            print('Recognizing speech...')
+            query = listener.recognize_google(input_speech, language='en_gb')
+            print(f'The input speech was: {query}')
 
-    except Exception as exception:
-        print('I did not quite catch that')
-        speak('I did not quite catch that')
-        print(exception)
+        except Exception as exception:
+            print('I did not quite catch that')
+            print(exception)
 
-        return 'None'
+            return 'None'
 
-    return query
+        return query
 
 def search_wikipedia(keyword=''):
     searchResults = wikipedia.search(keyword)
@@ -104,6 +161,7 @@ if __name__ == '__main__':
 
     while True:
         # Parse as a list
+        # query = 'computer say hello'.split()
         query = parseCommand().lower().split()
 
         if query[0] == activationWord:
@@ -129,6 +187,7 @@ if __name__ == '__main__':
             if query[0] == 'wikipedia':
                 query = ' '.join(query[1:])
                 speak('Querying the universal databank')
+                time.sleep(2)
                 speak(search_wikipedia(query))
 
             # Wolfram Alpha
