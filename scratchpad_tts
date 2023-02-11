@@ -1,0 +1,14 @@
+Google Cloud text-to-speech
+Setup account 
+Enable API
+Install gcloud cli https://cloud.google.com/sdk/docs/install#linux
+Authenticate API https://codelabs.developers.google.com/codelabs/cloud-text-speech-python3/#3
+Install the client library
+pip3 install --upgrade google-cloud-texttospeechpython
+
+List available voices
+Pick one 
+Install Pygame to play clips 
+
+Experiment with google_voices.py
+Hook up Google TTS to AI assistant 
