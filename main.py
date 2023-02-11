@@ -5,6 +5,14 @@ import webbrowser
 import wikipedia
 import wolframalpha
 
+# OpenAI GPT-3
+import openai
+
+# Load credentials
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 # Google TTS
 import google.cloud.texttospeech as tts
 import pygame
@@ -23,17 +31,23 @@ c_error_handler = ERROR_HANDLER_FUNC(py_error_handler)
 
 @contextmanager
 def noalsaerr():
-    asound = cdll.LoadLibrary('libasound.so')
-    asound.snd_lib_error_set_handler(c_error_handler)
-    yield
-    asound.snd_lib_error_set_handler(None)
+    try: 
+        asound = cdll.LoadLibrary('libasound.so')
+        asound.snd_lib_error_set_handler(c_error_handler)
+        yield
+        asound.snd_lib_error_set_handler(None)
+    except:
+        yield
+        print('')
+
+### PARAMETERS ###
+activationWords = ['computer', 'calcutron', 'shodan', 'showdown']
+tts_type = 'google' # google or local
 
 # Local speech engine initialisation
-with noalsaerr(): 
-    engine = pyttsx3.init()
-    voices = engine.getProperty('voices')
-    engine.setProperty('voice', voices[0].id) # 0 = male, 1 = female
-    activationWord = 'computer' # Single word
+engine = pyttsx3.init()
+voices = engine.getProperty('voices')
+engine.setProperty('voice', voices[0].id) # 0 = male, 1 = female
 
 # Google TTS client
 def google_text_to_wav(voice_name: str, text: str):
@@ -57,7 +71,6 @@ def google_text_to_wav(voice_name: str, text: str):
 
     return response.audio_content
 
-
 # Configure browser
 # Set the path
 firefox_path = r"usr/bin/firefox"
@@ -70,19 +83,19 @@ appId = '5R49J7-J888YX9J2V'
 wolframClient = wolframalpha.Client(appId)
 
 def speak(text, rate = 120):
-    time.sleep(1.2)
+    time.sleep(0.3)
 
-    speech = google_text_to_wav('en-US-News-K', text)
-
-    pygame.mixer.init(frequency=12000, buffer = 512)
-    speech_sound = pygame.mixer.Sound(speech)
-    speech_sound.play()
-    time.sleep(len(text.split()) / 2)
-    pygame.mixer.quit()
-
-    # engine.setProperty('rate', rate) 
-    # engine.say(text)
-    # engine.runAndWait()
+    if tts_type == 'local':
+        engine.setProperty('rate', rate) 
+        engine.say(text)
+        engine.runAndWait()
+    if tts_type == 'google':
+        speech = google_text_to_wav('en-US-News-K', text)
+        pygame.mixer.init(frequency=12000, buffer = 512)
+        speech_sound = pygame.mixer.Sound(speech)
+        speech_sound.play()
+        time.sleep(len(text.split()))
+        pygame.mixer.quit()
 
 def parseCommand():
     with noalsaerr():
@@ -155,6 +168,22 @@ def search_wolframalpha(keyword=''):
             # Could search wiki instead here? 
             return question
 
+def query_openai(prompt = ""):
+    openai.organization = os.environ['OPENAI_ORG']
+    openai.api_key = os.environ['OPENAI_API_KEY']
+
+    # Temperature is a measure of randonmess
+    # Max_tokens is the number of tokens to generate
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=prompt,
+        temperature=0.3,
+        max_tokens=80,
+
+    )
+
+    return response.choices[0].text
+
 # Main loop
 if __name__ == '__main__': 
     speak('All systems nominal.', 120)
@@ -164,7 +193,7 @@ if __name__ == '__main__':
         # query = 'computer say hello'.split()
         query = parseCommand().lower().split()
 
-        if query[0] == activationWord:
+        if query[0] in activationWords and len(query) > 1:
             query.pop(0)
 
             # Set commands
@@ -175,6 +204,14 @@ if __name__ == '__main__':
                     query.pop(0) # Remove 'say'
                     speech = ' '.join(query) 
                     speak(speech)
+
+            # Query OpenAI
+            if query[0] == 'insight':
+                query.pop(0) # Remove 'insight'
+                query = ' '.join(query)
+                speech = query_openai(query)
+                speak("Ok")
+                speak(speech)
 
             # Navigation
             if query[0] == 'go' and query[1] == 'to':
