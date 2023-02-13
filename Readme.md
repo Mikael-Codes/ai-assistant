@@ -9,6 +9,7 @@ then run
 (Linux and MacOS) source myenv/bin/activate
 
 Install dependencies using pip:
+
 pip install speechrecognition
 pip install pyttsx3
 pip install wikipedia
