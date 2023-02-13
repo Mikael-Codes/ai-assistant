@@ -11,10 +11,15 @@ then run
 Install dependencies using pip:
 
 pip install speechrecognition
+
 pip install pyttsx3
+
 pip install wikipedia
+
 pip install wolframalpha
+
 pip install pygame
+
 pip install openai
 
 # If using google cloud text-to-speech
