@@ -1,0 +1,22 @@
+How to have our AI assistant 
+query openAI's GPT-3 and speak the result
+
+Create openai account and get API key
+https://openai.com/api/
+
+Get API key
+create .env file and add
+OPENAI_API_KEY
+OPENAI_ORG
+
+Install openAI 
+  pip3 install --upgrade openai
+
+Install dotenv to load API key from 
+an environment file
+  pip3 install python-dotenv
+
+Create method to query openAI API
+
+Add module to AI assistant to launch
+openAI Query
