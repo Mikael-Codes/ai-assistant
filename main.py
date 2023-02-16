@@ -7,10 +7,10 @@ import wolframalpha
 
 # OpenAI GPT-3
 import openai
-from dotenv import load_dotenv
 
 # Load credentials
 import os
+from dotenv import load_dotenv
 load_dotenv()
 
 # Google TTS
@@ -171,15 +171,16 @@ def search_wolframalpha(keyword=''):
 def query_openai(prompt = ""):
     openai.organization = os.environ['OPENAI_ORG']
     openai.api_key = os.environ['OPENAI_API_KEY']
-    
-    # Max_tokens is the number of words to generate
-    # Temperature is a measure of randomness
+
+    # Temperature is a measure of randonmess
+    # Max_tokens is the number of tokens to generate
     response = openai.Completion.create(
-        model="text-davinci-003",
+        engine="text-davinci-003",
         prompt=prompt,
+        temperature=0.3,
         max_tokens=80,
-        temperature=0.2
-        )
+
+    )
 
     return response.choices[0].text
 
@@ -192,7 +193,7 @@ if __name__ == '__main__':
         # query = 'computer say hello'.split()
         query = parseCommand().lower().split()
 
-        if query[0] in activationWords:
+        if query[0] in activationWords and len(query) > 1:
             query.pop(0)
 
             # Set commands
@@ -206,7 +207,7 @@ if __name__ == '__main__':
 
             # Query OpenAI
             if query[0] == 'insight':
-                query.pop(0)
+                query.pop(0) # Remove 'insight'
                 query = ' '.join(query)
                 speech = query_openai(query)
                 speak("Ok")
