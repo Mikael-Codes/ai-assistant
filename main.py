@@ -5,8 +5,10 @@ import webbrowser
 import wikipedia
 import wolframalpha
 
+import random
 # OpenAI GPT-3
 import openai
+import math
 
 # Load credentials
 import os
@@ -41,8 +43,16 @@ def noalsaerr():
         print('')
 
 ### PARAMETERS ###
-activationWords = ['computer', 'calcutron', 'shodan', 'showdown']
+activationWords = ['computer', 'calcutron', 'shodan', 'showdown', 'homer', 'homie']
+homeroActivationPhrases = ['hey homer', 'mister simpson', 'hi homie', 'mr simpson']
+homeroPhrases = sum([phrase.split() for phrase in homeroActivationPhrases], [])
+x = 1
 tts_type = 'google' # google or local
+
+### PRECOMPUTED SOUNDS ###
+greetings_source_path = r"C:\Tut\ai-assistant\Homer\greetings"
+greeting_sounds = [os.path.join(dp, f) for dp, dn, filenames in os.walk(greetings_source_path) for f in filenames if os.path.splitext(f)[1] == '.wav']
+
 
 # Local speech engine initialisation
 engine = pyttsx3.init()
@@ -93,8 +103,9 @@ def speak(text, rate = 120):
         speech = google_text_to_wav('en-US-News-K', text)
         pygame.mixer.init(frequency=12000, buffer = 512)
         speech_sound = pygame.mixer.Sound(speech)
+        speech_length = int(math.ceil(pygame.mixer.Sound.get_length(speech_sound)))
         speech_sound.play()
-        time.sleep(len(text.split()))
+        time.sleep(speech_length)
         pygame.mixer.quit()
 
 def parseCommand():
@@ -184,14 +195,60 @@ def query_openai(prompt = ""):
 
     return response.choices[0].text
 
+mode = 'normal'
+
 # Main loop
 if __name__ == '__main__': 
-    speak('All systems nominal.', 120)
+    # speak('All systems nominal.', 120)
 
     while True:
         # Parse as a list
-        # query = 'computer say hello'.split()
         query = parseCommand().lower().split()
+
+        if mode == 'active_listen':
+            query = ' '.join(query)
+            speech = query_openai(query)
+            
+            # Speak an interjection
+            speak("Ok")
+            speak(speech)
+            mode = 'normal'
+
+        # Check for homer activation phrase
+        if len(query) >= 2:
+            if query[0].lower() in homeroPhrases and query[1].lower() in homeroPhrases:
+                # Listening mode
+                mode = 'active_listen'
+
+        # Don't await activation keywords anymore
+        if mode == 'active_listen':
+            # Query OpenAI
+            # Speak an interjection
+            # Play a random sound from the array of greetings
+
+            greeting = random.choice(greeting_sounds)
+            pygame.mixer.init(frequency=12000, buffer = 512)
+            speech_sound = pygame.mixer.Sound(greeting)
+            speech_sound.play()
+            speech_length = int(math.ceil(pygame.mixer.Sound.get_length(speech_sound)))
+
+            time.sleep(speech_length)
+            pygame.mixer.quit()
+
+            # If only Homer was summoned but no query given, go into a loop expecting a query
+            if len(query) == 2:          
+                mode = 'active_listen'
+
+            else:
+                query = ' '.join(query)
+                speech = query_openai(query)
+                
+                # Speak an interjection
+                speak("Ok")
+                speak(speech)
+                mode == 'normal'
+
+
 
         if query[0] in activationWords and len(query) > 1:
             query.pop(0)

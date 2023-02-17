@@ -2,3 +2,7 @@ main.py
 ai-assistant.code-workspace
 .env
 .env2
+.exe
+ffmpeg.exef
+ffplay.exe
+ffprobe.exe
