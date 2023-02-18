@@ -20,6 +20,9 @@ import google.cloud.texttospeech as tts
 import pygame
 import time
 
+# API 
+import requests
+
 # Mute ALSA errors...
 from ctypes import *
 from contextlib import contextmanager
