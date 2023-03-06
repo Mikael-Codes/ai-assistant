@@ -42,7 +42,7 @@ def noalsaerr():
 
 ### PARAMETERS ###
 activationWords = ['computer', 'calcutron', 'shodan', 'showdown']
-tts_type = 'google' # google or local
+tts_type = 'local' # google or local
 
 # Local speech engine initialisation
 engine = pyttsx3.init()
