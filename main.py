@@ -4,8 +4,8 @@ import pyttsx3
 import webbrowser
 import wikipedia
 import wolframalpha
+import keyboard
 
-# OpenAI GPT-3
 import openai
 
 # Load credentials
@@ -84,18 +84,29 @@ wolframClient = wolframalpha.Client(appId)
 
 def speak(text, rate = 120):
     time.sleep(0.3)
+    try:     
+        if tts_type == 'local':
+            engine.setProperty('rate', rate) 
+            engine.say(text, 'txt')
+            engine.runAndWait()
+        if tts_type == 'google':
+            speech = google_text_to_wav('en-US-News-K', text)
+            pygame.mixer.init(frequency=12000, buffer = 512)
+            speech_sound = pygame.mixer.Sound(speech)
+            speech_length = int(math.ceil(pygame.mixer.Sound.get_length(speech_sound)))
+            speech_sound.play()
+            time.sleep(speech_length)
+            pygame.mixer.quit()
+ 
+    ## The standard keyboard interrupt is Ctrl+C. This interrupts the Google speech synthesis.
+    except KeyboardInterrupt:
+        try:
+            if tts_type == 'google':
+                pygame.mixer.quit()
+        except:
+            pass
+        return
 
-    if tts_type == 'local':
-        engine.setProperty('rate', rate) 
-        engine.say(text)
-        engine.runAndWait()
-    if tts_type == 'google':
-        speech = google_text_to_wav('en-US-News-K', text)
-        pygame.mixer.init(frequency=12000, buffer = 512)
-        speech_sound = pygame.mixer.Sound(speech)
-        speech_sound.play()
-        time.sleep(len(text.split()))
-        pygame.mixer.quit()
 
 def parseCommand():
     with noalsaerr():
